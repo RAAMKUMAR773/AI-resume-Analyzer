@@ -1,0 +1,1217 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Resume Analyzer</title> <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- PDF Export Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-glow: rgba(99, 102, 241, 0.4);
+            --secondary: #a855f7;
+            --accent: #10b981;
+            --bg-dark: #030712;
+            --card-bg: rgba(17, 24, 39, 0.7);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --text-main: #f9fafb;
+            --text-muted: #9ca3af;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            background-image: 
+                radial-gradient(circle at 0% 0%, rgba(99, 102, 241, 0.15) 0%, transparent 40%),
+                radial-gradient(circle at 100% 100%, rgba(168, 85, 247, 0.15) 0%, transparent 40%);
+            color: var(--text-main);
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: url("https://www.transparenttextures.com/patterns/carbon-fibre.png");
+            opacity: 0.1;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .glow-spot {
+            position: fixed;
+            width: 400px;
+            height: 400px;
+            background: var(--primary-glow);
+            filter: blur(100px);
+            border-radius: 50%;
+            z-index: -1;
+            opacity: 0.3;
+            animation: floatGlow 15s infinite alternate;
+        }
+
+        @keyframes floatGlow {
+            0% { transform: translate(-20%, -20%) scale(1); }
+            100% { transform: translate(20%, 20%) scale(1.2); }
+        }
+
+        /* Glassmorphism utilities */
+        .glass {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--card-border);
+            border-radius: 20px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .glass:hover {
+            border-color: rgba(255, 255, 255, 0.15);
+            transform: translateY(-4px);
+            box-shadow: 0 12px 48px 0 rgba(0, 0, 0, 0.6);
+        }
+
+        /* Navbar */
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 8%;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(15px);
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .logo {
+            font-size: 1.75rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: #ffffff;
+            text-shadow: 0 2px 10px rgba(255, 255, 255, 0.2);
+        }
+
+        .logo i {
+            color: var(--primary-light);
+        }
+
+        .nav-btn {
+            background: linear-gradient(45deg, var(--primary), #6366f1);
+            color: white;
+            border: none;
+            padding: 12px 28px;
+            border-radius: 50px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 1.05rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 20px -5px rgba(79, 70, 229, 0.4);
+        }
+
+        .nav-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 25px -5px rgba(79, 70, 229, 0.6);
+        }
+
+        /* Main Container */
+        .main-container {
+            padding: 60px 5% 80px; /* Reduced side padding */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 60px;
+            width: 100%;
+            max-width: 1400px; /* Limit total width for readability */
+            margin: 0 auto;
+        }
+
+        /* Hero text */
+        .hero-text {
+            text-align: center;
+            max-width: 800px;
+            animation: fadeInDown 1s ease-out;
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .hero-text h1 {
+            font-size: 4.5rem;
+            line-height: 1.1;
+            margin-bottom: 24px;
+            font-weight: 700;
+        }
+
+        .hero-text h1 span {
+            background: linear-gradient(to right, #818cf8, #c084fc);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            color: transparent;
+        }
+
+        .hero-text p {
+            font-size: 1.2rem;
+            color: var(--text-muted);
+            line-height: 1.6;
+            margin: 0 auto;
+            max-width: 600px;
+        }
+
+        /* Upload & Features Wrapper */
+        .action-section {
+            display: flex;
+            flex-direction: column;
+            gap: 40px;
+            width: 100%;
+            max-width: 1200px;
+            animation: fadeInUp 1s ease-out 0.3s backwards;
+            scroll-margin-top: 100px;
+            /* offset for fixed navbar */
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(40px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Upload Card */
+        .upload-card {
+            padding: 50px;
+            text-align: center;
+            transition: transform 0.4s ease;
+            max-width: 800px; /* Broadened from 600px */
+            margin: 0 auto;
+            width: 100%;
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+            border-left: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .upload-card:hover {
+            transform: translateY(-8px);
+        }
+
+        .upload-icon-wrapper {
+            width: 90px;
+            height: 90px;
+            margin: 0 auto 24px;
+            background: rgba(129, 140, 248, 0.15);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            color: var(--primary-light);
+            animation: pulse-ring 2s infinite;
+        }
+
+        @keyframes pulse-ring {
+            0% {
+                box-shadow: 0 0 0 0 rgba(129, 140, 248, 0.4);
+            }
+
+            70% {
+                box-shadow: 0 0 0 20px rgba(129, 140, 248, 0);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(129, 140, 248, 0);
+            }
+        }
+
+        .upload-card h3 {
+            font-size: 1.8rem;
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+
+        .upload-card p {
+            color: var(--text-muted);
+            margin-bottom: 30px;
+            font-size: 1rem;
+        }
+
+        .file-input-wrapper {
+            margin-bottom: 25px;
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px dashed rgba(255, 255, 255, 0.4);
+            padding: 16px 36px;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-style: solid;
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, #4f46e5, #7c3aed);
+            color: white;
+            border: none;
+            padding: 16px 36px;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 20px -5px rgba(79, 70, 229, 0.5);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 30px -5px rgba(79, 70, 229, 0.6);
+        }
+
+        #fileName {
+            display: block;
+            margin-top: 15px;
+            font-size: 0.95rem;
+            color: #10b981;
+            font-weight: 600;
+            word-break: break-all;
+            min-height: 20px;
+        }
+
+        .message {
+            color: #ef4444;
+            font-size: 0.95rem;
+            font-weight: 600;
+            margin-top: 10px;
+            min-height: 20px;
+        }
+
+        /* Features Section */
+        .features {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 30px;
+            width: 100%;
+        }
+
+        @media (max-width: 900px) {
+            .features {
+                grid-template-columns: 1fr;
+            }
+
+            .hero-text h1 {
+                font-size: 3rem;
+            }
+        }
+
+        .feature-card {
+            padding: 35px 30px;
+            transition: all 0.4s ease;
+            text-align: center;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .feature-card:hover {
+            transform: translateY(-10px);
+            background: rgba(15, 23, 42, 0.8);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .feature-icon {
+            width: 65px;
+            height: 65px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            margin: 0 auto 20px;
+            color: #818cf8;
+            transition: transform 0.3s ease;
+        }
+
+        .feature-card:hover .feature-icon {
+            transform: scale(1.1) rotate(5deg);
+            background: linear-gradient(135deg, rgba(79, 70, 229, 0.3), rgba(236, 72, 153, 0.3));
+        }
+
+        .feature-card h4 {
+            font-size: 1.3rem;
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+
+        .feature-card p {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+
+        .feature-card p {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+
+        /* Results Section Styling */
+        .results-section {
+            display: none;
+            width: 100%;
+            max-width: 1200px; /* Broadened from 900px */
+            margin: 40px auto 0;
+            animation: slideUpFade 0.8s ease-out;
+        }
+
+        @keyframes slideUpFade {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .results-card {
+            padding: 50px;
+            border-top: 2px solid var(--primary-light);
+            text-align: left;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .results-card::before {
+            content: '';
+            position: absolute;
+            top: -100px;
+            right: -100px;
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, rgba(79, 70, 229, 0.1) 0%, transparent 70%);
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .results-header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding-bottom: 30px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .results-title-group {
+            text-align: center;
+        }
+
+        .score-circle {
+            width: 140px;
+            height: 140px;
+            border-radius: 50%;
+            background: conic-gradient(#10b981 0%, rgba(255, 255, 255, 0.05) 0);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.8rem;
+            font-weight: 800;
+            box-shadow: 0 0 30px rgba(16, 185, 129, 0.2);
+            position: relative;
+            transition: all 1s ease-out;
+        }
+
+        .score-circle::before {
+            content: '';
+            position: absolute;
+            width: 115px;
+            height: 115px;
+            background: #0f172a;
+            border-radius: 50%;
+        }
+
+        .score-text {
+            position: relative;
+            z-index: 1;
+            color: #10b981;
+        }
+
+        .skills-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 20px 0;
+        }
+
+        .skill-tag {
+            background: rgba(129, 140, 248, 0.1);
+            color: var(--primary-light);
+            padding: 8px 16px;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            border: 1px solid rgba(129, 140, 248, 0.2);
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .skill-tag:hover {
+            background: rgba(129, 140, 248, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .improvements-list {
+            list-style: none;
+            margin-top: 10px;
+        }
+
+        .input-field {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 14px 20px;
+            border-radius: 12px;
+            color: white;
+            font-size: 1rem;
+            outline: none;
+            transition: all 0.3s;
+            margin-bottom: 20px;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        .input-field:focus {
+            border-color: var(--primary-light);
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .input-field::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 30px;
+            margin-bottom: 40px;
+            align-items: start;
+        }
+
+        @media (max-width: 950px) {
+            .results-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+            margin-top: 30px;
+            align-items: stretch;
+        }
+
+        @media (max-width: 1100px) {
+            .results-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .results-grid {
+                grid-template-columns: 1fr;
+            }
+            .metric-box {
+                grid-column: span 1 !important;
+                grid-row: span 1 !important;
+            }
+        }
+
+        .metric-box {
+            background: rgba(15, 23, 42, 0.4);
+            border-radius: 20px;
+            padding: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.2);
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .results-card {
+            padding: 50px;
+            margin: 40px auto;
+            max-width: 1300px;
+        }
+
+        @media (max-width: 900px) {
+            .results-card {
+                padding: 25px;
+            }
+            .improvements-list li > div {
+                grid-template-columns: 1fr !important;
+                gap: 15px !important;
+            }
+            /* Rotate the arrow for vertical display on mobile */
+            .improvements-list li > div > div:nth-child(2) {
+                padding: 5px 0;
+            }
+            .improvements-list li > div > div:nth-child(2) i {
+                transform: rotate(90deg);
+            }
+            .improvements-list li > div > div:first-child {
+                border-radius: 12px 12px 0 0 !important;
+                border-right: 1px solid rgba(239, 68, 68, 0.08) !important;
+                border-bottom: none !important;
+            }
+            .improvements-list li > div > div:last-child {
+                border-radius: 0 0 12px 12px !important;
+                border-left: 1px solid rgba(16, 185, 129, 0.08) !important;
+                border-top: none !important;
+            }
+        }
+
+        .metric-title {
+            font-size: 1.1rem;
+            margin-bottom: 15px;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+        }
+
+        .metric-item {
+            margin-bottom: 12px;
+        }
+
+        .metric-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9rem;
+            margin-bottom: 6px;
+            color: var(--text-muted);
+        }
+
+        .progress-bar-bg {
+            background: rgba(255, 255, 255, 0.05);
+            height: 10px;
+            border-radius: 10px;
+            width: 100%;
+            overflow: hidden;
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3);
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 1.5s cubic-bezier(0.1, 0.5, 0.2, 1);
+            width: 0%;
+        }
+
+        .bg-green {
+            background: linear-gradient(90deg, #10b981, #34d399);
+        }
+
+        .bg-yellow {
+            background: linear-gradient(90deg, #f59e0b, #fbbf24);
+        }
+
+        .bg-red {
+            background: linear-gradient(90deg, #ef4444, #f87171);
+        }
+
+        .bg-blue {
+            background: linear-gradient(90deg, #3b82f6, #60a5fa);
+        }
+
+        .missing-skill {
+            background: rgba(239, 68, 68, 0.1);
+            color: #fca5a5;
+            border: 1px dashed rgba(239, 68, 68, 0.4);
+        }
+
+        .improvement-example {
+            background: rgba(0, 0, 0, 0.25);
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 10px;
+            font-size: 0.85rem;
+            border-left: 2px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .example-bad {
+            color: #fca5a5;
+            margin-bottom: 8px;
+            display: flex;
+            gap: 8px;
+        }
+
+        .example-good {
+            color: #6ee7b7;
+            display: flex;
+            gap: 8px;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            margin-top: 40px;
+        }
+
+        .btn-magic {
+            background: linear-gradient(45deg, #10b981, #059669);
+            color: white;
+            border: none;
+            padding: 18px 36px;
+            border-radius: 12px;
+            font-size: 1.15rem;
+            font-weight: 700;
+            cursor: pointer;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 25px rgba(16, 185, 129, 0.4);
+            position: relative;
+            overflow: hidden;
+            margin-bottom: 25px;
+        }
+
+        .btn-magic::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(to right, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.3) 50%, rgba(255, 255, 255, 0) 100%);
+            transform: rotate(30deg);
+            animation: shimmer 3s infinite;
+        }
+
+        @keyframes shimmer {
+            0% {
+                transform: translateX(-100%) rotate(30deg);
+            }
+
+            100% {
+                transform: translateX(100%) rotate(30deg);
+            }
+        }
+
+        .btn-magic:hover {
+            transform: translateY(-5px) scale(1.02);
+            box-shadow: 0 15px 35px rgba(16, 185, 129, 0.6);
+        }
+
+        /* Generated Resume Viewer */
+        .generated-resume-wrapper {
+            display: none;
+            margin-top: 30px;
+            animation: fadeInDown 0.8s ease-out;
+        }
+
+        .resume-viewer {
+            background: #ffffff;
+            color: #1e293b;
+            padding: 40px 50px;
+            border-radius: 8px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            text-align: left;
+            position: relative;
+            background-image: url('data:image/svg+xml,%3Csvg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg"%3E%3Cdefs%3E%3Cpattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse"%3E%3Cpath d="M 20 0 L 0 0 0 20" fill="none" stroke="%23f1f5f9" stroke-width="1"/%3E%3C/pattern%3E%3C/defs%3E%3Crect width="100%" height="100%" fill="url(%23grid)"/%3E%3C/svg%3E');
+        }
+
+        .resume-header {
+            text-align: center;
+            border-bottom: 2px solid #334155;
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .resume-name {
+            font-size: 2.2rem;
+            font-weight: 700;
+            margin-bottom: 5px;
+            color: #0f172a;
+            text-transform: uppercase;
+        }
+
+        .resume-contact {
+            font-size: 0.9rem;
+            color: #475569;
+        }
+
+        .resume-section-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #3b82f6;
+            border-bottom: 1px solid #cbd5e1;
+            padding-bottom: 5px;
+            margin: 25px 0 15px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .resume-job {
+            margin-bottom: 15px;
+        }
+
+        .resume-job-header {
+            display: flex;
+            justify-content: space-between;
+            font-weight: 700;
+            font-size: 1.05rem;
+            margin-bottom: 5px;
+        }
+
+        .resume-job-company {
+            font-weight: 500;
+            font-style: italic;
+            margin-bottom: 8px;
+            color: #475569;
+        }
+
+        .resume-bullets {
+            list-style-type: disc;
+            padding-left: 20px;
+            font-size: 0.95rem;
+            line-height: 1.6;
+            color: #334155;
+        }
+
+        .resume-bullets li {
+            margin-bottom: 6px;
+        }
+
+        .ai-watermark {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(16, 185, 129, 0.1);
+            color: #059669;
+            padding: 4px 12px;
+            border-radius: 50px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        /* â”€â”€ Job Opportunities â”€â”€ */
+        .jobs-section {
+            margin-top: 60px;
+        }
+        .jobs-section-header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 30px;
+        }
+        .jobs-section-header h4 {
+            font-size: 1.6rem;
+            font-weight: 800;
+            color: #fff;
+        }
+        .jobs-section-header .jobs-badge {
+            background: linear-gradient(135deg, #6366f1, #a855f7);
+            color: white;
+            font-size: 0.72rem;
+            font-weight: 700;
+            padding: 4px 12px;
+            border-radius: 50px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .jobs-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 22px;
+        }
+        @media (max-width: 768px) { .jobs-grid { grid-template-columns: 1fr; } }
+        .job-card {
+            background: rgba(15, 23, 42, 0.5);
+            border: 1px solid rgba(255,255,255,0.07);
+            border-radius: 20px;
+            padding: 28px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            transition: all 0.35s ease;
+            position: relative;
+            overflow: hidden;
+            animation: fadeInUp 0.6s ease-out backwards;
+        }
+        .job-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--job-color-a), var(--job-color-b));
+            border-radius: 20px 20px 0 0;
+        }
+        .job-card:hover {
+            transform: translateY(-6px);
+            border-color: rgba(255,255,255,0.15);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.4);
+        }
+        .job-card-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 12px;
+        }
+        .job-card-left { flex: 1; }
+        .job-role {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #f1f5f9;
+            line-height: 1.3;
+            margin-bottom: 6px;
+        }
+        .job-category {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            font-weight: 600;
+        }
+        .job-match-ring {
+            width: 66px;
+            height: 66px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            flex-shrink: 0;
+            background: conic-gradient(var(--ring-color) var(--ring-pct), rgba(255,255,255,0.05) 0);
+            position: relative;
+        }
+        .job-match-ring::before {
+            content: '';
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            background: #0f172a;
+            border-radius: 50%;
+        }
+        .job-match-text {
+            position: relative;
+            z-index: 1;
+            font-size: 0.75rem;
+            font-weight: 800;
+            color: var(--ring-color);
+            line-height: 1;
+            text-align: center;
+        }
+        .job-match-label {
+            position: relative;
+            z-index: 1;
+            font-size: 0.45rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .job-salary {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.85rem;
+            color: #a3e635;
+            font-weight: 600;
+        }
+        .job-why {
+            font-size: 0.88rem;
+            color: #94a3b8;
+            line-height: 1.6;
+            border-left: 2px solid rgba(99,102,241,0.4);
+            padding-left: 12px;
+        }
+        .job-chips-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+        .job-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 7px;
+        }
+        .job-chip {
+            font-size: 0.78rem;
+            padding: 4px 12px;
+            border-radius: 50px;
+            font-weight: 600;
+        }
+        .chip-match {
+            background: rgba(16,185,129,0.1);
+            color: #34d399;
+            border: 1px solid rgba(16,185,129,0.2);
+        }
+        .chip-grow {
+            background: rgba(245,158,11,0.1);
+            color: #fbbf24;
+            border: 1px dashed rgba(245,158,11,0.3);
+        }
+    </style>
+</head>
+
+<body> 
+    <div class="glow-spot"></div>
+    <div class="glow-spot" style="right: 0; bottom: 0; background: var(--secondary); opacity: 0.2; animation-delay: -5s;"></div>
+    <!-- Navbar -->
+    <nav>
+        <div class="logo"> <i class="fa-solid fa-brain"></i> <span>ResumeAI</span> </div>
+        <div class="nav-right" id="navRight">
+            <span id="userWelcome" style="margin-right: 20px; font-weight: 500; color: var(--text-muted);"></span>
+            <button class="nav-btn logout-btn" onclick="handleLogout()" style="background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2); box-shadow: none;">
+                <i class="fa-solid fa-sign-out-alt"></i> Logout
+            </button>
+            <button class="nav-btn" style="margin-left: 10px;"
+                onclick="document.getElementById('actionSection').scrollIntoView({behavior:'smooth'})"> Try Now </button>
+        </div>
+    </nav>
+    <div class="main-container"> <!-- Hero Section -->
+        <div class="hero-text">
+            <h1>Unlock Your <br><span>Career Potential</span></h1>
+            <p>Upload your resume to get a quick score, see what skills you have, and get simple tips to help you land
+                your dream job faster.</p>
+        </div> <!-- Action Section (Upload + Features) -->
+        <div class="action-section" id="actionSection"> <!-- Upload Card -->
+            <div class="glass upload-card" id="uploadBox">
+                <div class="upload-icon-wrapper"> <i class="fa-solid fa-cloud-arrow-up"></i> </div>
+                <h3>Upload Resume</h3>
+                <p>Supported formats: PDF, DOC, DOCX (Max 5MB)</p>
+                <form id="resumeForm" onsubmit="event.preventDefault();" action="http://127.0.0.1:5000/upload" method="post" enctype="multipart/form-data">
+                    <input type="text" id="jobTitleInput" class="input-field"
+                        placeholder="Target Job Title (e.g. Frontend Developer)"> <input type="file" id="resumeInput"
+                        name="resume" hidden accept=".pdf,.doc,.docx">
+                    <div class="file-input-wrapper"> <button type="button" class="btn-secondary"
+                            onclick="document.getElementById('resumeInput').click()"> <i
+                                class="fa-solid fa-file-pdf"></i> Select Document </button> <span id="fileName"></span>
+                    </div>
+                    <div id="message" class="message"></div> <button type="button" class="btn-primary"
+                        onclick="checkResume()" id="analyzeBtn"> <i class="fa-solid fa-wand-magic-sparkles"></i> Analyze
+                        Resume </button>
+                </form>
+            </div> <!-- Analysis Results Section (Hidden initially) -->
+            <div class="results-section" id="resultsSection">
+                <div class="glass results-card">
+                    <div class="results-header" style="text-align: center; margin-bottom: 60px; padding: 10px;">
+                        <div class="results-title-group">
+                            <h2 style="font-size: 3.2rem; margin-bottom: 15px; background: linear-gradient(135deg, #fff 0%, var(--primary) 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; color: transparent; font-weight: 800; letter-spacing: -2px;">Resume Intelligence</h2>
+                            <p style="color: var(--text-muted); font-size: 1.25rem; max-width: 700px; margin: 0 auto;">A professional, AI-driven breakdown of your talent profile and career alignment.</p>
+                        </div>
+                    </div>
+                    <div class="results-grid">
+                        <!-- Overall Score Card -->
+                        <div class="metric-box glass" style="grid-column: span 1; grid-row: span 2; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px; border: 1px solid var(--primary-glow); background: radial-gradient(circle at top right, rgba(99, 102, 241, 0.1), rgba(0,0,0,0));">
+                             <div class="score-circle"> <span class="score-text" id="displayScore">0</span><span class="score-text" style="font-size: 1.2rem; margin-top: 10px;">%</span> </div>
+                             <h3 style="margin-top: 24px; font-size: 1.6rem; letter-spacing: -0.5px; color: #fff;">Overall Fitness</h3>
+                             <p style="color: var(--text-muted); font-size: 0.95rem; margin-top: 5px;">Analysis for: <span id="targetRoleDisplay" style="color: var(--primary); font-weight: 700;">Not Specified</span></p>
+                        </div>
+
+                        <!-- Stats Card -->
+                        <div class="metric-box glass" style="grid-column: span 1; background: rgba(0,0,0,0.2) !important;">
+                            <div class="metric-title" style="color: var(--secondary);"><i class="fa-solid fa-chart-line"></i> Performance</div>
+                            <div style="display: flex; flex-direction: column; gap: 15px; margin-top: 15px;">
+                                <div class="metric-item"><div class="metric-label"><span>Impact</span> <span>75%</span></div><div class="progress-bar-bg"><div class="progress-bar-fill bg-blue" style="width: 0%" data-width="75%"></div></div></div>
+                                <div class="metric-item"><div class="metric-label"><span>Structure</span> <span>90%</span></div><div class="progress-bar-bg"><div class="progress-bar-fill bg-green" style="width: 0%" data-width="90%"></div></div></div>
+                                <div class="metric-item"><div class="metric-label"><span>ATS Ranking</span> <span id="keywordScoreText">60%</span></div><div class="progress-bar-bg"><div class="progress-bar-fill bg-yellow" style="width: 0%" data-width="60%"></div></div></div>
+                            </div>
+                        </div>
+                        <div class="metric-box glass" style="grid-column: span 1;" id="missingElementsBox"></div>
+
+                        <!-- Strengths Card -->
+                        <div class="metric-box glass" style="grid-column: span 2; border-bottom: 3.5px solid var(--accent) !important; background: rgba(16, 185, 129, 0.02); padding: 30px;">
+                            <div class="metric-title" style="color: var(--accent); margin-bottom: 20px;"><i class="fa-solid fa-shield-check"></i> Verified Profile Strengths</div>
+                            <div class="skills-container" id="mockSkills" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px;"></div>
+                        </div>
+                    </div>
+
+                    <!-- —— Data Discovery Section —— -->
+                    <div style="margin-top: 50px; background: rgba(99, 102, 241, 0.03); border: 1px dashed rgba(99, 102, 241, 0.2); border-radius: 20px; padding: 40px;">
+                        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px;">
+                            <i class="fa-solid fa-database" style="color: var(--primary-light); font-size: 1.4rem;"></i>
+                            <h4 style="font-size: 1.6rem; color: #fff; font-weight: 800;">Extracted Talent Discovery</h4>
+                        </div>
+                        <p style="color: var(--text-muted); margin-bottom: 25px; font-size: 1rem;">This is the "Holding Area" for your data. We have identified the following items from your resume and "put them here" before deploying the elite layout.</p>
+                        
+                        <div id="discoveryContent" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+                            <!-- Populated via JS -->
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 50px;">
+                        <h4 style="font-size: 1.6rem; color: #fff; font-weight: 800; display: flex; align-items: center; gap: 15px; margin-bottom: 25px;">Optimized Suggestions</h4>
+                        <ul class="improvements-list" id="mockImprovements" style="padding: 0; list-style: none;"></ul>
+                    </div>
+
+                    <!-- â”€â”€ Job Opportunities Section â”€â”€ -->
+                    <div class="jobs-section" id="jobOpportunitiesSection" style="display:none;">
+                        <div class="jobs-section-header">
+                            <i class="fa-solid fa-briefcase" style="font-size:1.5rem; color:#a855f7;"></i>
+                            <h4>Career Opportunities For You</h4>
+                            <span class="jobs-badge">AI Matched</span>
+                        </div>
+                        <p style="color:var(--text-muted); font-size:0.95rem; margin-bottom:28px; margin-top:-18px;">Based on your resume skills and experience, here are roles where you have a strong competitive edge.</p>
+                        <div class="jobs-grid" id="jobsGrid"></div>
+                    </div>
+                    <div
+                        style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(168, 85, 247, 0.1) 100%); border: 1px solid var(--primary-glow); border-radius: 20px; padding: 40px; margin-top: 50px; text-align: center; backdrop-filter: blur(10px); position: relative; overflow: hidden;">
+                        <div style="position: absolute; top: -50px; right: -50px; width: 150px; height: 150px; background: var(--primary-glow); filter: blur(50px); border-radius: 50%; opacity: 0.3;"></div>
+                        <h4 style="font-size: 1.8rem; margin-bottom: 15px; color: #fff; font-weight: 800;">Rebuild for Excellence</h4>
+                        <p style="color: var(--text-muted); margin-bottom: 30px; font-size: 1.1rem; max-width: 600px; margin-left: auto; margin-right: auto;">Our AI can instantly refactor your entire resume into an elite, ATS-ready layout with optimized bullet points.</p> 
+                        <button class="btn-magic" style="max-width: 400px; margin: 0 auto;" onclick="generatePerfectResume()"> 
+                            <i class="fa-solid fa-sparkles"></i> Deploy Perfect Resume Layout 
+                        </button>
+                    </div> <!-- The Rebuilt Resume Viewer -->
+                    <div class="generated-resume-wrapper" id="generatedResume">
+                        <div class="resume-viewer">
+                            <div class="ai-watermark"><i class="fa-solid fa-check-circle"></i> ATS Optimized</div>
+                            <div class="resume-header">
+                                <div class="resume-name" id="dynCandidateName">Alex Candidate</div>
+                                <div class="resume-contact" id="dynCandidateEmail">alex@example.com | (555) 123-4567 |
+                                    linkedin.com/in/alex | github.com/alex</div>
+                            </div>
+                            <div class="resume-section-title">Professional Summary</div>
+                            <p style="font-size: 0.95rem; line-height: 1.6; color: #334155;" id="dynRoleView">Mock
+                                Summary</p>
+                            <div class="resume-section-title">Experience</div>
+                            <div id="aiExperienceContainer"> <!-- Populated dynamically based on AI response --> </div>
+                            <p style="font-size: 0.95rem; line-height: 1.6; color: #334155; margin-bottom: 20px;" id="aiCompetencies">Skills</p>
+
+                            <div class="resume-section-title">Education</div>
+                            <p style="font-size: 0.95rem; line-height: 1.6; color: #334155; margin-bottom: 20px;" id="aiEducation">Education</p>
+
+                            <div class="resume-section-title">Key Projects</div>
+                            <div id="aiProjectsContainer" style="margin-bottom: 20px;"></div>
+
+                            <div class="resume-section-title">Certifications & Achievements</div>
+                            <p style="font-size: 0.95rem; line-height: 1.6; color: #334155; margin-bottom: 20px;" id="aiCertifications">Awards</p>
+                        </div>
+                        <div class="action-buttons" style="margin-top: 20px;" id="exportButtons"> <button
+                                class="btn-primary" style="flex: 1; position: relative" onclick="downloadPDF(this)"> <i
+                                    class="fa-solid fa-file-pdf"></i> Download Perfect PDF </button> <button
+                                class="btn-secondary" style="flex: 1;"
+                                onclick="alert('Exporting to Word format! (Feature coming soon via python-docx integration)')">
+                                <i class="fa-solid fa-file-word"></i> Export to DOCX </button> </div>
+                    </div>
+                    <div class="action-buttons"
+                        style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 25px; margin-top: 40px;">
+                        <button class="btn-primary" style="flex: 1;"
+                            onclick="alert('Your advanced PDF report is downloading...')"> <i
+                                class="fa-solid fa-download"></i> Download Full Report </button> <button
+                            class="btn-secondary" style="flex: 1;" onclick="location.reload()"> <i
+                                class="fa-solid fa-arrow-rotate-left"></i> Analyze Another </button>
+                    </div>
+                </div>
+            </div> <!-- Features Section -->
+            <div class="features">
+                <div class="glass feature-card">
+                    <div class="feature-icon"> <i class="fa-solid fa-microchip"></i> </div>
+                    <h4>Smart Skill Finder</h4>
+                    <p>We scan your resume to find your technical and soft skills, showing you what you're good at and
+                        what you can learn next.</p>
+                </div>
+                <div class="glass feature-card">
+                    <div class="feature-icon"> <i class="fa-solid fa-chart-pie"></i> </div>
+                    <h4>Resume Checker</h4>
+                    <p>See how well your resume matches what companies are looking for and get a clear score.</p>
+                </div>
+                <div class="glass feature-card">
+                    <div class="feature-icon"> <i class="fa-solid fa-lightbulb"></i> </div>
+                    <h4>Easy Improvements</h4>
+                    <p>Get simple advice on how to improve your resume's layout, words, and structure to make it stand
+                        out.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="app.js"></script>
+    <script>
+        function handleLogout() {
+            localStorage.removeItem('userName');
+            window.location.href = 'login.html';
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const userName = localStorage.getItem('userName') || 'User';
+            const userWelcome = document.getElementById('userWelcome');
+
+            if (userWelcome) {
+                userWelcome.innerHTML = `<i class="fa-regular fa-circle-user"></i> Hi, <span style="color: white; font-weight: 700;">${userName}</span>`;
+            }
+        });
+    </script>
+</body>
+
+</html>
